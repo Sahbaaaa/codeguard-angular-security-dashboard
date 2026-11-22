@@ -1,0 +1,76 @@
+<div class="app-shell">
+  <aside class="sidebar">
+    <a class="brand" href="#top" aria-label="CodeGuard home">
+      <span class="brand-mark">C<span>G</span></span>
+      <span class="brand-copy"><strong>CodeGuard</strong><small>SECURITY WORKSPACE</small></span>
+    </a>
+
+    <div class="nav-label">WORKSPACE</div>
+    <a class="nav-item active" href="#dashboard"><span class="nav-icon">▦</span> Overview</a>
+    <a class="nav-item" href="#scanner"><span class="nav-icon">⌘</span> Code scanner</a>
+    <a class="nav-item" href="#findings"><span class="nav-icon">◎</span> Findings <span class="nav-count">{{ findings.length }}</span></a>
+
+    <div class="sidebar-bottom">
+      <div class="demo-card"><span class="pulse-dot"></span><div><strong>Local demo</strong><small>No code is uploaded</small></div></div>
+      <div class="profile"><div class="avatar">CG</div><div><strong>Research workspace</strong><small>Personal project</small></div></div>
+    </div>
+  </aside>
+
+  <main class="main-content" id="top">
+    <header class="topbar">
+      <div class="breadcrumb">Workspace <span>/</span> <strong>Overview</strong></div>
+      <div class="topbar-right"><span class="online-dot"></span><span>Scanner ready</span><span class="topbar-divider"></span><span class="version">PROTOTYPE v1.0</span></div>
+    </header>
+
+    <div class="page-wrap" id="dashboard">
+      <section class="page-heading">
+        <div><div class="eyebrow">SECURITY ANALYSIS</div><h1>Code security overview</h1><p>Inspect source code for common security patterns and review potential risks.</p></div>
+        <button class="button button-ghost" type="button" (click)="loadExample()">↻ &nbsp;Load sample</button>
+      </section>
+
+      <section class="metric-grid" aria-label="Scan statistics">
+        <article class="metric-card"><div class="metric-top"><span>Total findings</span><span class="metric-icon icon-blue">⌁</span></div><strong>{{ findings.length }}</strong><small>{{ hasScanned ? 'In latest scan' : 'Run a scan to begin' }}</small></article>
+        <article class="metric-card"><div class="metric-top"><span>Critical</span><span class="metric-icon icon-red">!</span></div><strong>{{ criticalCount }}</strong><small class="subtle">Critical severity</small></article>
+        <article class="metric-card"><div class="metric-top"><span>High</span><span class="metric-icon icon-orange">↑</span></div><strong>{{ highCount }}</strong><small class="subtle">High severity</small></article>
+        <article class="metric-card"><div class="metric-top"><span>Medium / Low</span><span class="metric-icon icon-yellow">◷</span></div><strong>{{ mediumCount + lowCount }}</strong><small class="subtle">Medium and low severity</small></article>
+      </section>
+
+      <section class="workspace-grid">
+        <article class="panel editor-panel" id="scanner">
+          <div class="panel-heading"><div><div class="panel-kicker">01 / INPUT</div><h2>Source code</h2></div><span class="file-type">{{ fileName }}</span></div>
+          <p class="panel-description">Paste a snippet or select a local source file to inspect.</p>
+          <div class="editor-toolbar"><span class="editor-dot red-dot"></span><span class="editor-dot yellow-dot"></span><span class="editor-dot green-dot"></span><span class="editor-filename">{{ fileName }}</span><button type="button" class="text-button" (click)="openFilePicker()">＋ Choose file</button><input #fileInput type="file" hidden accept=".js,.ts,.html,.css,.java,.py,.cpp,.c,.h,.cs,.php,.rb,.go,.txt" (change)="onFileSelected($event)"></div>
+          <textarea class="code-input" [(ngModel)]="code" spellcheck="false" aria-label="Source code editor" placeholder="Paste source code here..."></textarea>
+          <div class="editor-footer"><span>{{ code.split('\n').length }} lines <span class="muted-separator">·</span> {{ code.length }} characters</span><span>Local analysis only</span></div>
+          <div *ngIf="errorMessage" class="error-message" role="alert">{{ errorMessage }}</div>
+          <button class="button button-primary scan-button" type="button" (click)="runScan()" [disabled]="isScanning || !code.trim()"><span *ngIf="!isScanning">⌕ &nbsp;Run security scan</span><span *ngIf="isScanning" class="loading-label"><span class="spinner"></span> Analyzing source code…</span></button>
+          <p class="disclaimer">Demo scanner: uses illustrative regular-expression rules, not a production-grade security engine.</p>
+        </article>
+
+        <article class="panel summary-panel">
+          <div class="panel-heading"><div><div class="panel-kicker">02 / SUMMARY</div><h2>Latest scan</h2></div><span class="summary-symbol">◉</span></div>
+          <div *ngIf="!hasScanned" class="summary-empty"><div class="empty-illustration">⌁</div><strong>No scan performed yet</strong><p>Run a scan to see the analysis summary.</p></div>
+          <div *ngIf="hasScanned" class="summary-content">
+            <div class="scan-result-number"><strong>{{ findings.length }}</strong><span>potential findings</span></div>
+            <div class="severity-bar" aria-label="Finding severity distribution"><span class="bar-critical" [style.flex]="criticalCount || 0.001"></span><span class="bar-high" [style.flex]="highCount || 0.001"></span><span class="bar-medium" [style.flex]="mediumCount || 0.001"></span><span class="bar-low" [style.flex]="lowCount || 0.001"></span></div>
+            <div class="legend-row"><span><i class="legend-dot critical-bg"></i>Critical <b>{{ criticalCount }}</b></span><span><i class="legend-dot high-bg"></i>High <b>{{ highCount }}</b></span><span><i class="legend-dot medium-bg"></i>Medium <b>{{ mediumCount }}</b></span><span><i class="legend-dot low-bg"></i>Low <b>{{ lowCount }}</b></span></div>
+            <div class="summary-meta"><div><span>File analyzed</span><strong>{{ scanHistory[0]?.fileName }}</strong></div><div><span>Lines inspected</span><strong>{{ scanHistory[0]?.linesScanned }}</strong></div><div><span>Completed</span><strong>{{ scanHistory[0]?.scannedAt | date:'HH:mm:ss' }}</strong></div></div>
+          </div>
+          <div class="summary-foot"><span class="status-check">✓</span><span>Analysis runs entirely in your browser</span></div>
+        </article>
+      </section>
+
+      <section class="panel findings-panel" id="findings">
+        <div class="findings-heading"><div><div class="panel-kicker">03 / RESULTS</div><h2>Security findings <span class="result-count">{{ findings.length }}</span></h2><p class="panel-description">Review detected patterns and suggested remediation steps.</p></div><div class="findings-actions"><select [(ngModel)]="filter" aria-label="Filter findings by severity"><option value="All">All severities</option><option value="Critical">Critical</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select><button type="button" class="button button-ghost clear-button" (click)="clearResults()" [disabled]="!hasScanned">Clear</button></div></div>
+        <div *ngIf="!hasScanned" class="table-empty"><div class="empty-icon">⌕</div><strong>Waiting for scan results</strong><p>Your findings will appear here after you run a scan.</p></div>
+        <div *ngIf="hasScanned && findings.length === 0" class="table-empty"><div class="empty-icon success-icon">✓</div><strong>No patterns detected</strong><p>The demo rules did not identify any matching patterns in this file.</p></div>
+        <div *ngIf="hasScanned && findings.length > 0 && visibleFindings.length === 0" class="table-empty"><strong>No findings for this filter</strong><p>Try selecting another severity level.</p></div>
+        <div *ngIf="visibleFindings.length > 0" class="table-wrap"><table><thead><tr><th>FINDING</th><th>RULE</th><th>SEVERITY</th><th>LOCATION</th><th></th></tr></thead><tbody><ng-container *ngFor="let finding of visibleFindings; trackBy: trackFinding"><tr (click)="selectFinding(finding)" [class.selected-row]="selectedFinding?.id === finding.id" tabindex="0" (keydown.enter)="selectFinding(finding)"><td><div class="finding-name"><span class="finding-marker" [ngClass]="finding.severity.toLowerCase()"></span><strong>{{ finding.title }}</strong></div></td><td class="rule-cell">{{ finding.ruleId }}</td><td><span class="severity-pill" [ngClass]="finding.severity.toLowerCase()">{{ finding.severity }}</span></td><td class="location-cell">Line {{ finding.line }}</td><td class="chevron-cell">{{ selectedFinding?.id === finding.id ? '⌄' : '›' }}</td></tr><tr *ngIf="selectedFinding?.id === finding.id" class="detail-row"><td colspan="5"><div class="finding-detail"><div><span class="detail-label">CODE SNIPPET</span><code>{{ finding.snippet || '(empty line)' }}</code></div><div><span class="detail-label">WHY THIS MATTERS</span><p>{{ finding.description }}</p></div><div><span class="detail-label">RECOMMENDED ACTION</span><p>{{ finding.recommendation }}</p></div></div></td></tr></ng-container></tbody></table></div>
+        <div *ngIf="hasScanned && findings.length > 0" class="table-footer">Showing {{ visibleFindings.length }} of {{ findings.length }} findings <span>Click a finding to view details</span></div>
+      </section>
+
+      <section class="history-strip" *ngIf="scanHistory.length > 1"><div><div class="panel-kicker">RECENT ACTIVITY</div><h2>Previous scans</h2></div><div class="history-list"><div class="history-item" *ngFor="let scan of scanHistory.slice(1)"><span class="history-file">▤ {{ scan.fileName }}</span><span>{{ scan.findings.length }} findings</span><span>{{ scan.scannedAt | date:'MMM d, HH:mm' }}</span></div></div></section>
+      <footer class="page-footer"><span>CodeGuard <span class="muted-separator">·</span> Personal learning project</span><span>Built with Angular &amp; TypeScript</span></footer>
+    </div>
+  </main>
+</div>
